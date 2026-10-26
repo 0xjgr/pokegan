@@ -1,159 +1,162 @@
 # PokeGAN
 
-Una DCGAN entrenada desde cero durante 10.000 épocas para generar sprites de
-Pokémon de 64x64 que no existen. Empezó como proyecto final de una asignatura
-de deep learning y acabó siendo sobre todo un ejercicio de pelearse con la
-inestabilidad de las GAN, que es donde de verdad se aprende.
+*[Versión en español](README.es.md)*
 
-![Época 5000](Epochs/epoch_05000.png)
+A DCGAN trained from scratch for 10,000 epochs to generate 64x64 Pokémon
+sprites that don't exist. It started as the final project for a deep learning
+course and ended up being mostly an exercise in wrestling with GAN
+instability, which is where the real learning happens.
 
-## Cómo funciona
+![Epoch 5000](Epochs/epoch_05000.png)
 
-Una GAN son dos redes jugando a un juego de suma cero:
+## How it works
 
-- **El generador** parte de un vector de ruido de 100 dimensiones y, a base de
-  convoluciones traspuestas (`Conv2DTranspose`), lo proyecta hasta una imagen de
-  64x64x3.
-- **El discriminador** es un clasificador binario que intenta separar los
-  Pokémon reales del dataset de las falsificaciones del generador.
+A GAN is two networks playing a zero-sum game:
 
-En cada paso el discriminador se entrena para acertar y el generador para
-hacerle fallar. El equilibrio entre los dos es todo el problema.
+- **The generator** starts from a 100-dimensional noise vector and, through
+  transposed convolutions (`Conv2DTranspose`), projects it up to a 64x64x3
+  image.
+- **The discriminator** is a binary classifier trying to tell the real
+  Pokémon in the dataset apart from the generator's fakes.
 
-**Dataset:** unas 800 imágenes del [Pokemon Images Dataset](https://www.kaggle.com/datasets/kvpratama/pokemon-images-dataset)
-de Kaggle, redimensionadas a 64x64 y normalizadas al rango [-1, 1].
+At each step the discriminator is trained to get it right and the generator
+to make it fail. The balance between the two is the whole problem.
 
-## Lo que se rompió por el camino
+**Dataset:** about 800 images from the [Pokemon Images Dataset](https://www.kaggle.com/datasets/kvpratama/pokemon-images-dataset)
+on Kaggle, resized to 64x64 and normalized to the [-1, 1] range.
 
-Esta es la parte interesante del proyecto. Las tres cosas que costaron:
+## What broke along the way
+
+This is the interesting part of the project. The three things that were hard:
 
 ### Mode collapse
 
-En las primeras versiones el generador encontraba una mancha verdosa y rojiza
-que engañaba al discriminador, y a partir de ahí dejaba de explorar: producía la
-misma imagen una y otra vez. El modelo había encontrado un mínimo cómodo y se
-quedaba ahí.
+In the early versions the generator found a greenish-red blob that fooled the
+discriminator, and from then on it stopped exploring: it produced the same
+image over and over. The model had found a comfortable minimum and stayed
+there.
 
-Se arregló dando ventaja al generador. Bajé el *learning rate* del
-discriminador a 2e-5 frente al 1e-4 del generador, que es la idea del **TTUR**
-(Two Time-Scale Update Rule), y subí el `Dropout` del discriminador a 0.3. Con
-el discriminador aprendiendo más despacio, el generador tiene margen para
-probar formas antes de que lo penalicen.
+The fix was giving the generator an edge. I lowered the discriminator's
+*learning rate* to 2e-5 versus the generator's 1e-4, which is the idea behind
+**TTUR** (Two Time-Scale Update Rule), and raised the discriminator's
+`Dropout` to 0.3. With the discriminator learning more slowly, the generator
+has room to try out shapes before getting penalized.
 
-### Artefactos de rejilla
+### Checkerboard artifacts
 
-Aparecían patrones de cuadrícula en las imágenes, el problema clásico de
-`Conv2DTranspose` cuando el tamaño del filtro no es múltiplo del stride y el
-solapamiento queda desigual. Se corrigió ajustando filtros y pasos, y alargando
-el entrenamiento para que `BatchNormalization` estabilizara las activaciones.
+Grid patterns showed up in the images, the classic `Conv2DTranspose` problem
+when the kernel size isn't a multiple of the stride and the overlap ends up
+uneven. It was fixed by adjusting kernels and strides, and by training longer
+so `BatchNormalization` could stabilize the activations.
 
-### Estabilidad a 10.000 épocas
+### Stability at 10,000 epochs
 
-Con etiquetas binarias perfectas (0 y 1) el gradiente se vuelve demasiado
-abrupto y el entrenamiento se desmadra a las pocas miles de iteraciones. Con
-**label smoothing** las imágenes reales se etiquetan como 0.9 en vez de 1.0, y
-eso basta para que el entrenamiento aguante las 10.000 épocas enteras.
+With perfect binary labels (0 and 1) the gradient becomes too steep and
+training goes off the rails after a few thousand iterations. With **label
+smoothing**, real images are labeled 0.9 instead of 1.0, and that's enough
+for training to hold up for the full 10,000 epochs.
 
-## Evolución del entrenamiento
+## Training progress
 
-| Época 20 | Época 100 | Época 500 |
+| Epoch 20 | Epoch 100 | Epoch 500 |
 | :---: | :---: | :---: |
 | ![](Epochs/epoch_00020.png) | ![](Epochs/epoch_00100.png) | ![](Epochs/epoch_00500.png) |
 
-| Época 1000 | Época 3000 | Época 5000 |
+| Epoch 1000 | Epoch 3000 | Epoch 5000 |
 | :---: | :---: | :---: |
 | ![](Epochs/epoch_01000.png) | ![](Epochs/epoch_03000.png) | ![](Epochs/epoch_05000.png) |
 
-En `Epochs/` están todos los puntos guardados, y en
-[`video/evolucion_pokemon.mp4`](video/evolucion_pokemon.mp4) está la evolución
-completa montada en vídeo.
+All the saved checkpoints are in `Epochs/`, and
+[`video/evolucion_pokemon.mp4`](video/evolucion_pokemon.mp4) has the full
+evolution edited into a video.
 
-## Generar imágenes
+## Generating images
 
-El modelo ya entrenado está en `modelo/`. Para sacar una rejilla de muestras:
+The trained model is in `modelo/`. To get a grid of samples:
 
 ```bash
 pip install -r requirements.txt
-python generar.py --n 16 --salida muestras.png
+python generar.py --n 16 --output samples.png
 ```
 
-O desde Python, si lo prefieres suelto:
+Or from Python, if you'd rather use it directly:
 
 ```python
 import tensorflow as tf
 
-generador = tf.keras.models.load_model(
+generator = tf.keras.models.load_model(
     "modelo/generador_pokemon_10000_final.h5", compile=False
 )
-ruido = tf.random.normal([1, 100])
-imagen = (generador(ruido, training=False)[0] + 1) / 2   # de [-1,1] a [0,1]
+noise = tf.random.normal([1, 100])
+image = (generator(noise, training=False)[0] + 1) / 2   # from [-1,1] to [0,1]
 ```
 
-El `compile=False` evita que Keras intente reconstruir el optimizador, que para
-generar no hace falta. El fichero está en el formato `.h5` antiguo de Keras.
+`compile=False` stops Keras from trying to rebuild the optimizer, which isn't
+needed for generating. The file is in Keras's legacy `.h5` format.
 
-## Reentrenar
+## Retraining
 
-El entrenamiento completo está en `entrenamiento_dcgan.ipynb`. Necesitas bajarte el dataset de
-Kaggle y dejarlo en la ruta que apunta `DATA_PATH`. Son 10.000 épocas: en una
-GPU decente es cuestión de horas, en CPU no lo intentes.
+The full training is in `entrenamiento_dcgan.ipynb` (the notebook's comments
+are in Spanish). You need to download the dataset from Kaggle and put it at
+the path `DATA_PATH` points to. It's 10,000 epochs: on a decent GPU it's a
+matter of hours; on CPU, don't even try.
 
-## Arquitectura
+## Architecture
 
-| | Generador | Discriminador |
+| | Generator | Discriminator |
 | --- | --- | --- |
-| Entrada | ruido de 100 dim | imagen 64x64x3 |
-| Bloques | Dense 8x8x256, 3x `Conv2DTranspose` (128, 64, 3) | 2x `Conv2D` (64, 128) |
-| Activación | ReLU, `tanh` a la salida | LeakyReLU(0.2) |
-| Regularización | BatchNormalization | Dropout(0.3) |
-| Optimizador | Adam, lr 1e-4, beta_1 0.5 | Adam, lr 2e-5, beta_1 0.5 |
+| Input | 100-dim noise | 64x64x3 image |
+| Blocks | Dense 8x8x256, 3x `Conv2DTranspose` (128, 64, 3) | 2x `Conv2D` (64, 128) |
+| Activation | ReLU, `tanh` at the output | LeakyReLU(0.2) |
+| Regularization | BatchNormalization | Dropout(0.3) |
+| Optimizer | Adam, lr 1e-4, beta_1 0.5 | Adam, lr 2e-5, beta_1 0.5 |
 
-Pérdida: entropía cruzada binaria desde logits, con label smoothing de 0.9 en
-las muestras reales.
+Loss: binary cross-entropy from logits, with 0.9 label smoothing on real
+samples.
 
-## Qué salió y qué no
+## What worked and what didn't
 
-Lo que funciona: el modelo sale del mode collapse y genera variedad, y captura
-bien las paletas de color y las siluetas orgánicas de la franquicia. A 64x64 y
-de reojo, muchas muestras pasan por Pokémon.
+What works: the model escapes mode collapse and generates variety, and it
+captures the franchise's color palettes and organic silhouettes well. At 64x64
+and at a glance, many samples pass for Pokémon.
 
-Lo que no: a esa resolución no hay detalle real, y ninguna criatura tiene
-anatomía coherente si te paras a mirarla. Subir a 128x128 pedía más profundidad
-de filtros y bastante más entrenamiento del que tenía tiempo de hacer. Tampoco
-medí nada de forma objetiva: no hay FID ni Inception Score, la evaluación fue
-mirar las rejillas de muestras, que para un trabajo de clase vale pero no es
-evaluar.
+What doesn't: at that resolution there's no real detail, and no creature has
+coherent anatomy if you look closely. Going up to 128x128 needed deeper
+filters and much more training than I had time for. I also didn't measure
+anything objectively: there's no FID or Inception Score; evaluation was
+looking at sample grids, which is fine for a class project but isn't
+evaluation.
 
-## Estructura
+## Structure
 
 ```
-entrenamiento_dcgan.ipynb   el entrenamiento completo, celda a celda
-generar.py                  genera muestras desde el modelo entrenado
-modelo/                     generador entrenado, 10.000 épocas
-Epochs/                     muestras guardadas durante el entrenamiento
-video/                      la evolución montada en vídeo
+entrenamiento_dcgan.ipynb   the full training, cell by cell
+generar.py                  generates samples from the trained model
+modelo/                     trained generator, 10,000 epochs
+Epochs/                     samples saved during training
+video/                      the evolution edited into a video
 ```
 
-## Referencias
+## References
 
 - Ian J. Goodfellow et al. (2014), [*Generative Adversarial Nets*](https://arxiv.org/abs/1406.2661).
 - Alec Radford et al. (2015), [*Unsupervised Representation Learning with Deep
   Convolutional Generative Adversarial Networks*](https://arxiv.org/abs/1511.06434),
-  el paper de la DCGAN.
+  the DCGAN paper.
 - Heusel et al. (2017), [*GANs Trained by a Two Time-Scale Update Rule*](https://arxiv.org/abs/1706.08500),
-  de donde sale el TTUR.
-- El [tutorial de DCGAN de TensorFlow](https://www.tensorflow.org/tutorials/generative/dcgan),
-  que fue el punto de partida.
-- Dataset: [Pokemon Images Dataset](https://www.kaggle.com/datasets/kvpratama/pokemon-images-dataset), de Kaggle.
+  where TTUR comes from.
+- The [TensorFlow DCGAN tutorial](https://www.tensorflow.org/tutorials/generative/dcgan),
+  which was the starting point.
+- Dataset: [Pokemon Images Dataset](https://www.kaggle.com/datasets/kvpratama/pokemon-images-dataset), on Kaggle.
 
-## Licencia
+## License
 
-El código está bajo licencia MIT, con copyright de jorgeress. Ver
+The code is under the MIT license, copyright jorgeress. See
 [LICENSE](LICENSE).
 
-Eso cubre el código y nada más. El modelo entrenado (`modelo/`) y las imágenes
-generadas (`Epochs/`, `video/`) salen de un dataset de ilustraciones de Pokémon,
-que son propiedad de Nintendo, Game Freak y Creatures. Los publico como
-resultado de un trabajo académico, no como algo que puedas reutilizar
-libremente. Si vas a hacer cualquier cosa con ellos que no sea mirarlos,
-infórmate tú.
+That covers the code and nothing else. The trained model (`modelo/`) and the
+generated images (`Epochs/`, `video/`) come from a dataset of Pokémon
+artwork, which is owned by Nintendo, Game Freak and Creatures. I'm publishing
+them as the outcome of an academic project, not as something you can freely
+reuse. If you're going to do anything with them other than look at them, do
+your own research.

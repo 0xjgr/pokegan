@@ -1,4 +1,4 @@
-"""Genera muestras de Pokemon a partir del generador ya entrenado."""
+"""Generate Pokémon samples from the trained generator."""
 
 import argparse
 import math
@@ -10,13 +10,13 @@ DIM_RUIDO = 100
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--n", type=int, default=16,
-                        help="cuantas imagenes generar (por defecto 16)")
-    parser.add_argument("--salida", default="muestras.png",
-                        help="fichero PNG de salida")
-    parser.add_argument("--modelo", default=MODELO_POR_DEFECTO,
-                        help="ruta al generador entrenado")
-    parser.add_argument("--semilla", type=int, default=None,
-                        help="semilla para poder repetir el mismo resultado")
+                        help="how many images to generate (default 16)")
+    parser.add_argument("--output", "--salida", dest="salida", metavar="FILE", default="samples.png",
+                        help="output PNG file")
+    parser.add_argument("--model", "--modelo", dest="modelo", metavar="PATH", default=MODELO_POR_DEFECTO,
+                        help="path to the trained generator")
+    parser.add_argument("--seed", "--semilla", dest="semilla", metavar="SEED", type=int, default=None,
+                        help="seed to reproduce the same result")
     args = parser.parse_args()
 
     # Se importan aqui dentro para que --help no tenga que cargar TensorFlow,
@@ -45,7 +45,7 @@ def main():
     fig.savefig(args.salida, dpi=150, bbox_inches="tight")
     plt.close(fig)
 
-    print(f"{args.n} imagenes guardadas en {args.salida}")
+    print(f"{args.n} images saved to {args.salida}")
 
 
 if __name__ == "__main__":
