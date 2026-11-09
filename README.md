@@ -151,7 +151,7 @@ video/                      the evolution edited into a video
 
 ## License
 
-The code is under the MIT license, copyright jorgeress. See
+The code is under the MIT license, copyright 0xjgr. See
 [LICENSE](LICENSE).
 
 That covers the code and nothing else. The trained model (`modelo/`) and the

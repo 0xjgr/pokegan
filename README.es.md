@@ -150,7 +150,7 @@ video/                      la evolución montada en vídeo
 
 ## Licencia
 
-El código está bajo licencia MIT, con copyright de jorgeress. Ver
+El código está bajo licencia MIT, con copyright de 0xjgr. Ver
 [LICENSE](LICENSE).
 
 Eso cubre el código y nada más. El modelo entrenado (`modelo/`) y las imágenes
